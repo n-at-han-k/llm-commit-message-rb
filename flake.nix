@@ -1,35 +1,32 @@
 {
-  description = "Helm chart for Kubernetes Agent Sandbox";
-
+  description = "llm-commit-message-rb — Ruby gem";
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-25.11";
-    flake-utils.url = "github:numtide/flake-utils";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    utils.url = "github:numtide/flake-utils";
   };
-
-  outputs =
-    {
-      nixpkgs,
-      flake-utils,
-      ...
-    }:
-    flake-utils.lib.eachDefaultSystem (
-      system:
+  outputs = { self, nixpkgs, utils }:
+    utils.lib.eachDefaultSystem (system:
       let
-        pkgs = import nixpkgs { inherit system; };
+        pkgs = nixpkgs.legacyPackages.${system};
+        ruby = pkgs.ruby_3_4;
       in
       {
         devShells.default = pkgs.mkShell {
-          packages = with pkgs; [
-            ruby_3_4
-            bundler
+          nativeBuildInputs = [ pkgs.pkg-config ];
+          buildInputs = with pkgs; [
+            ruby
+            libyaml
+            openssl
             llama-cpp
           ];
-          shellHook = ''
-            export BUNDLE_PATH=".bundler"
-            export GEM_PATH=".bundler/ruby/3.4.0"
 
-            export PATH="$PWD/bin:$PATH"
-            export PATH=".bundler/ruby/3.4.0/bin:$PATH"
+          shellHook = ''
+            export GEM_HOME="$HOME/.gem-${ruby.version}"
+            export GEM_PATH="$GEM_HOME"
+            export PATH="$GEM_HOME/bin:$PATH"
+            export BUNDLE_GEMFILE="$PWD/Gemfile"
+            export BUNDLE_PATH="$GEM_HOME"
+            export BUNDLE_BIN="$GEM_HOME/bin"
           '';
         };
       }
